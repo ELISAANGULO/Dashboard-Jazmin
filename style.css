@@ -1,0 +1,22 @@
+/*.stButton button{
+    background-color: blueviolet;
+}*/
+
+.st-key-success button {
+    background-color: blue;
+    color: white;
+    border: none;
+    opacity: 0.7;
+}
+
+.st-emotion-cache-4uzi61 {
+    background-color: white;
+}
+
+.st-key-data button{
+    background-color: #31a735; /* Green */
+    color: white;
+    border: none;
+    cursor: pointer;
+  
+}

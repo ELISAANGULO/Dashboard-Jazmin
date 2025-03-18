@@ -1,0 +1,18 @@
+credentials:
+  usernames:
+    elisa:
+      email: elisah@gmail.com
+      name: elisa angulo
+      password: abcd1234
+    edgar:
+      email: edgar@gmail.com
+      name: edgar garzon
+      password: abcd4321
+cookie:
+  expiry_days: 30
+  key: random_signature_key # Must be string
+  name: random_cookie_name
+preauthorized:
+  emails:
+  - elisa@gmail.com
+
