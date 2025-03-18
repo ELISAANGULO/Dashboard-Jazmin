@@ -17,7 +17,7 @@ from paginas.urn_vapor import urn_vapor
 import re
 
 # Configuración inicial de la página
-st.set_page_config(page_title="DAHSBOARD JAZ", page_icon='imagenes/plataforma-petrolera.png', layout="wide")
+st.set_page_config(page_title="DAHSBOARD JAZ-GIR-URN", page_icon='imagenes/plataforma-petrolera.png', layout="wide")
 
 # Estilo CSS para personalizar encabezado
 header_style = """
