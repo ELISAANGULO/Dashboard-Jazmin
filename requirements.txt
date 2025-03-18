@@ -2,5 +2,5 @@ plotly==5.3.1
 streamlit-extras==0.6.0
 streamlit==1.2.0
 pyrebase4==4.5.0
-pycryptodome==3.10.1
+pycryptodome==3.19.1
 oauth2client==4.1.3
