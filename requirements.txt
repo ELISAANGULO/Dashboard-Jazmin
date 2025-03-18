@@ -2,3 +2,6 @@ plotly
 streamlit-extras
 streamlit
 pyrebase
+pyrebase4
+pycryptodome
+oauth2client
