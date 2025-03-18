@@ -1,2 +1,4 @@
 plotly
 streamlit-extras
+streamlit
+pyrebase4
