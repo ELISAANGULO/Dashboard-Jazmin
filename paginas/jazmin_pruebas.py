@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import pathlib
+from streamlit_extras.metric_cards import style_metric_cards
 
 def jazmin_pruebas():
     st.title("JAZMIN PRUEBAS")
@@ -77,6 +78,25 @@ def jazmin_pruebas():
 
     st.divider()
 
+    df_well['FECHA'] = pd.to_datetime(df_well['FECHA'])
+
+    # Obtener los datos más recientes del pozo seleccionado
+    latest_data = df_well.sort_values(by='FECHA', ascending=False).iloc[0]
+
+    # Mostrar tarjetas con los datos seleccionados
+    style_metric_cards(border_left_color="orange", border_size_px=0)
+
+    st.subheader(f'Datos del pozo {selected_well}')
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Fecha del última prueba", latest_data['FECHA'].strftime('%Y-%m-%d'))
+        st.metric("VOLUMEN DE ACEITE (BOPD)", latest_data['VOLUMEN DE ACEITE'])
+    with col2:
+        st.metric("VOLUMEN DE AGUA (BWPD)", latest_data['VOLUMEN DE AGUA'])
+        st.metric("BSW", latest_data['BSW'])
+
+    st.divider()
+
     cc1, cc2 = st.columns(2)
     with cc1:
 
@@ -110,33 +130,37 @@ def jazmin_pruebas():
         selected_pozos = st.multiselect('Selecciona los pozos que deseas ver', comparison_data['SARTA'].unique())
         if selected_pozos:
             comparison_data = comparison_data[comparison_data['SARTA'].isin(selected_pozos)]
+            latest_data = latest_data[latest_data['SARTA'].isin(selected_pozos)]
+            second_latest_data = second_latest_data[second_latest_data['SARTA'].isin(selected_pozos)]
         
         # Mostrar la tabla comparativa en Streamlit
         st.dataframe(comparison_data, hide_index=True)
         
-    with cc2:    
-        # Paso 3: Calcular el total de producción para la última prueba y la prueba anterior
-        total_production_latest = latest_data['VOLUMEN DE ACEITE_LATEST'].sum()
-        total_production_latest = total_production_latest.round(1)
-        total_production_previous = second_latest_data['VOLUMEN DE ACEITE_PREVIOUS'].sum()
-        total_production_previous = total_production_previous.round(1)
-        dif_prod = (total_production_latest - total_production_previous).round(1)
-        
-        # Crear una gráfica de barras para comparar la producción total
-        fig = go.Figure()
-        fig.add_trace(go.Bar(y=[total_production_latest], name='Total Volumen de Aceite (Última Prueba)', marker_color='green', text=[total_production_latest], textposition='auto'))
-        fig.add_trace(go.Bar(y=[total_production_previous], name='Total Volumen de Aceite (Prueba Anterior)', marker_color='blue', text=[total_production_previous], textposition='auto'))
-        fig.add_trace(go.Bar(y=[dif_prod], name='Diferencia', marker_color='red', text=[dif_prod], textposition='auto'))
-        
-        fig.update_layout(
+        with cc2:    
+            # Paso 3: Calcular el total de producción para la última prueba y la prueba anterior
+            total_production_latest = latest_data['VOLUMEN DE ACEITE_LATEST'].sum()
+            total_production_latest = total_production_latest.round(1)
+            total_production_previous = second_latest_data['VOLUMEN DE ACEITE_PREVIOUS'].sum()
+            total_production_previous = total_production_previous.round(1)
+            dif_prod = (total_production_latest - total_production_previous).round(1)
+            
+            # Crear una gráfica de barras para comparar la producción total
+            fig = go.Figure()
+            fig.add_trace(go.Bar(y=[total_production_latest], name='Total Volumen de Aceite (Última Prueba)', marker_color='green', text=[total_production_latest], textposition='auto'))
+            fig.add_trace(go.Bar(y=[total_production_previous], name='Total Volumen de Aceite (Prueba Anterior)', marker_color='blue', text=[total_production_previous], textposition='auto'))
+            fig.add_trace(go.Bar(y=[dif_prod], name='Diferencia', marker_color='red', text=[dif_prod], textposition='auto'))
+            
+            fig.update_layout(
             title='Comparación de Producción Total entre pruebas',
             yaxis=dict(title='Volumen de Aceite'),
             barmode='group'
-        )
-        # Mostrar la gráfica en Streamlit
-        st.plotly_chart(fig)
+            )
+            # Mostrar la gráfica en Streamlit
+            st.plotly_chart(fig)
 
     st.divider()
+
+
     c1, c2, c3 = st.columns([2, 2, 3])
 
     with c1:

@@ -26,22 +26,16 @@ def urn_dinason():
     excel_file_CARGADOR_URN_path = 'data/Cargador Diferidas Underriver Norte.xlsx'
 
     df_historico_urn = load_excel_file(excel_file_path, sheet_name='DINASON URN')
-    df_historico_urn = df_historico_urn[['SARTA', 'FECHA','SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA']].copy()
+    df_historico_urn = df_historico_urn[['SARTA', 'FECHA','SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
     df_urn = load_excel_file(excel_file_path, sheet_name='DIF DINASON URN')
     df_cargadores_URN = load_excel_file(excel_file_CARGADOR_URN_path, sheet_name='Trabajo Previo')
 
     df_cargadores_URN.columns = df_cargadores_URN.iloc[0]
     df_cargadores_URN = df_cargadores_URN[1:].reset_index(drop=True)
 
-    # Display first 5 rows of df_urn
-    #st.write("First 5 rows of df_urn:")
-    #st.dataframe(df_urn.head(5))
-
     # Process df_cargadores_URN
     estado_pozos_urn = df_cargadores_URN[['NOMBRE  SARTA']].copy()
     estado_pozos_urn.rename(columns={'NOMBRE  SARTA': 'SARTA'}, inplace=True)
-    #st.write("First 3 rows of estado_pozos_urn:")
-    #st.dataframe(estado_pozos_urn.head(3))
 
     # Sumergencia alta URN
     df_sumergencia_ALTA_URN = df_urn[(df_urn['SUMERGENCIA EFECTIVA ACTUAL'] > 200) & 
@@ -85,14 +79,15 @@ def urn_dinason():
 
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['LLENADO DE BOMBA'], mode='markers', name='LLENADO DE BOMBA', yaxis='y1', marker=dict(color='green')))
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SUMERGENCIA EFECTIVA'], mode='lines+markers', name='SUMERGENCIA EFECTIVA', yaxis='y2', marker=dict(color='blue')))
-
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['TEMPERATURA'], mode='markers', name='TEMPERATURA', yaxis='y1', marker=dict(color='red',symbol='square')))
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SPM'], mode='markers', name='SPM', yaxis='y1', marker=dict(color='Purple',symbol='triangle-up')))
 
     fig.update_layout(
         title=f'Datos del pozo {selected_well}',
         xaxis=dict(title='FECHA', tickformat='%b %Y'),
-        yaxis=dict(title=dict(text='LLENADO DE BOMBA')),
+        yaxis=dict(title='LLENADO DE BOMBA/ TEMPERATURA / SPM'),
         yaxis2=dict(
-            title=dict(text='SUMERGENCIA EFECTIVA'),
+            title='SUMERGENCIA EFECTIVA',
             tickfont=dict(color='black'),
             anchor='x',
             overlaying='y',

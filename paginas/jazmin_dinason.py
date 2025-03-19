@@ -26,11 +26,12 @@ def jazmin_dinason():
 
     df_historico_jaz = load_excel_file(excel_file_JAZ_path, sheet_name='DINASON JAZMIN')
 
+
     # Verificar si la columna 'SPM' existe en el DataFrame
     if 'SPM' in df_historico_jaz.columns:
-        df_historico_jaz = df_historico_jaz[['SARTA', 'FECHA', 'SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA']].copy()
+        df_historico_jaz = df_historico_jaz[['SARTA', 'FECHA', 'SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
     else:
-        df_historico_jaz = df_historico_jaz[['SARTA', 'FECHA', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA']].copy()
+        df_historico_jaz = df_historico_jaz[['SARTA', 'FECHA', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
 
     df_jaz = load_excel_file(excel_file_JAZ_path, sheet_name='DIF DINASON JAZ')
     df_cargadores_Jaz = load_excel_file(excel_file_CARGADOR_JAZ_path, sheet_name='Trabajo Previo')
@@ -90,14 +91,15 @@ def jazmin_dinason():
 
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['LLENADO DE BOMBA'], mode='markers', name='LLENADO DE BOMBA', yaxis='y1', marker=dict(color='green')))
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SUMERGENCIA EFECTIVA'], mode='lines+markers', name='SUMERGENCIA EFECTIVA', yaxis='y2', marker=dict(color='blue')))
-
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['TEMPERATURA'], mode='markers', name='TEMPERATURA', yaxis='y1', marker=dict(color='red',symbol='square')))
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SPM'], mode='markers', name='SPM', yaxis='y1', marker=dict(color='Purple',symbol='triangle-up')))
 
     fig.update_layout(
         title=f'Datos del pozo {selected_well}',
         xaxis=dict(title='FECHA', tickformat='%b %Y'),
-        yaxis=dict(title=dict(text='LLENADO DE BOMBA')),
+        yaxis=dict(title='LLENADO DE BOMBA/ TEMPERATURA / SPM'),
         yaxis2=dict(
-            title=dict(text='SUMERGENCIA EFECTIVA'),
+            title='SUMERGENCIA EFECTIVA',
             tickfont=dict(color='black'),
             anchor='x',
             overlaying='y',

@@ -4,7 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import pathlib
-
+from streamlit_extras.metric_cards import style_metric_cards
 
 def urn_pruebas():
     st.title("URN PRUEBAS")
@@ -26,7 +26,7 @@ def urn_pruebas():
     df_historico_urn = load_excel_file(excel_file_URN_path, sheet_name='BD')
 
     # Convertir FECHA a datetime y luego al formato DD/MM/YYYY
-    df_historico_urn['FECHA'] = pd.to_datetime(df_historico_urn['FECHA']).dt.strftime('%d/%m/%Y')
+    df_historico_urn['FECHA'] = pd.to_datetime(df_historico_urn['FECHA'],dayfirst=True)
 
     # Formatear los valores de VOLUMEN DE ACEITE para que tengan solo una cifra decimal
     df_historico_urn['VOLUMEN DE ACEITE'] = df_historico_urn['VOLUMEN DE ACEITE'].round(1)
@@ -34,8 +34,11 @@ def urn_pruebas():
     df_historico_urn['BSW'] = df_historico_urn['BSW'].round(1)
 
     # Filtrar datos del último año
-    ultimo_ano = pd.to_datetime(df_historico_urn['FECHA'], format='%d/%m/%Y').max() - pd.DateOffset(years=4)
-    df_historico_urn = df_historico_urn[pd.to_datetime(df_historico_urn['FECHA'], format='%d/%m/%Y') >= ultimo_ano]
+    # Filtrar datos del último año
+    ultimo_ano = df_historico_urn['FECHA'].max() - pd.DateOffset(years=4)
+
+    # Filtrar los datos de los últimos cuatro años
+    df_historico_urn = df_historico_urn[df_historico_urn['FECHA'] >= ultimo_ano]
 
     # Función para obtener los datos de un pozo específico
     def get_well_data(well_name):
@@ -51,10 +54,9 @@ def urn_pruebas():
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], format='%d/%m/%Y'), y=df_well['VOLUMEN DE ACEITE'], mode='lines+markers', name='VOLUMEN DE ACEITE', yaxis='y1', marker=dict(color='green')))
-    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], format='%d/%m/%Y'), y=df_well['VOLUMEN DE AGUA'], mode='lines+markers', name='VOLUMEN DE AGUA', yaxis='y2', marker=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], format='%d/%m/%Y'), y=df_well['BSW'], mode='lines+markers', name='BSW', yaxis='y1', marker=dict(color='red')))
-
+    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], dayfirst=True), y=df_well['VOLUMEN DE ACEITE'], mode='lines+markers', name='VOLUMEN DE ACEITE', yaxis='y1', marker=dict(color='green')))
+    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], dayfirst=True), y=df_well['VOLUMEN DE AGUA'], mode='lines+markers', name='VOLUMEN DE AGUA', yaxis='y2', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=pd.to_datetime(df_well['FECHA'], dayfirst=True), y=df_well['BSW'], mode='lines+markers', name='BSW', yaxis='y1', marker=dict(color='red')))
     fig.update_layout(
         title=f'Datos del pozo {selected_well}',
         xaxis=dict(title='FECHA', tickformat='%d/%m/%Y'),
@@ -74,6 +76,25 @@ def urn_pruebas():
     )
 
     st.plotly_chart(fig)
+
+    st.divider()
+
+    df_well['FECHA'] = pd.to_datetime(df_well['FECHA'])
+
+    # Obtener los datos más recientes del pozo seleccionado
+    latest_data = df_well.sort_values(by='FECHA', ascending=False).iloc[0]
+
+    # Mostrar tarjetas con los datos seleccionados
+    style_metric_cards(border_left_color="orange", border_size_px=0)
+
+    st.subheader(f'Datos del pozo {selected_well}')
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Fecha del última prueba", latest_data['FECHA'].strftime('%Y-%m-%d'))
+        st.metric("VOLUMEN DE ACEITE (BOPD)", latest_data['VOLUMEN DE ACEITE'])
+    with col2:
+        st.metric("VOLUMEN DE AGUA (BWPD)", latest_data['VOLUMEN DE AGUA'])
+        st.metric("BSW", latest_data['BSW'])
 
     st.divider()
 
@@ -108,36 +129,37 @@ def urn_pruebas():
         # Calcular las diferencias
         comparison_data['DIF_VOL_ACEITE'] = comparison_data['VOLUMEN DE ACEITE_LATEST'] - comparison_data['VOLUMEN DE ACEITE_PREVIOUS']
         
-        
         # Agregar un buscador para filtrar por pozo
         selected_pozos = st.multiselect('Selecciona los pozos que deseas ver', comparison_data['SARTA'].unique())
         if selected_pozos:
             comparison_data = comparison_data[comparison_data['SARTA'].isin(selected_pozos)]
+            latest_data = latest_data[latest_data['SARTA'].isin(selected_pozos)]
+            second_latest_data = second_latest_data[second_latest_data['SARTA'].isin(selected_pozos)]
         
         # Mostrar la tabla comparativa en Streamlit
         st.dataframe(comparison_data, hide_index=True)
         
-    with cc2:    
-        # Paso 3: Calcular el total de producción para la última prueba y la prueba anterior
-        total_production_latest = latest_data['VOLUMEN DE ACEITE_LATEST'].sum()
-        total_production_latest = total_production_latest.round(1)
-        total_production_previous = second_latest_data['VOLUMEN DE ACEITE_PREVIOUS'].sum()
-        total_production_previous = total_production_previous.round(1)
-        dif_prod = (total_production_latest - total_production_previous).round(1)
-        
-        # Crear una gráfica de barras para comparar la producción total
-        fig = go.Figure()
-        fig.add_trace(go.Bar(y=[total_production_latest], name='Total Volumen de Aceite (Última Prueba)', marker_color='green', text=[total_production_latest], textposition='auto'))
-        fig.add_trace(go.Bar(y=[total_production_previous], name='Total Volumen de Aceite (Prueba Anterior)', marker_color='blue', text=[total_production_previous], textposition='auto'))
-        fig.add_trace(go.Bar(y=[dif_prod], name='Diferencia', marker_color='red', text=[dif_prod], textposition='auto'))
-        
-        fig.update_layout(
+        with cc2:    
+            # Paso 3: Calcular el total de producción para la última prueba y la prueba anterior
+            total_production_latest = latest_data['VOLUMEN DE ACEITE_LATEST'].sum()
+            total_production_latest = total_production_latest.round(1)
+            total_production_previous = second_latest_data['VOLUMEN DE ACEITE_PREVIOUS'].sum()
+            total_production_previous = total_production_previous.round(1)
+            dif_prod = (total_production_latest - total_production_previous).round(1)
+            
+            # Crear una gráfica de barras para comparar la producción total
+            fig = go.Figure()
+            fig.add_trace(go.Bar(y=[total_production_latest], name='Total Volumen de Aceite (Última Prueba)', marker_color='green', text=[total_production_latest], textposition='auto'))
+            fig.add_trace(go.Bar(y=[total_production_previous], name='Total Volumen de Aceite (Prueba Anterior)', marker_color='blue', text=[total_production_previous], textposition='auto'))
+            fig.add_trace(go.Bar(y=[dif_prod], name='Diferencia', marker_color='red', text=[dif_prod], textposition='auto'))
+            
+            fig.update_layout(
             title='Comparación de Producción Total entre pruebas',
             yaxis=dict(title='Volumen de Aceite'),
             barmode='group'
-        )
-        # Mostrar la gráfica en Streamlit
-        st.plotly_chart(fig)
+            )
+            # Mostrar la gráfica en Streamlit
+            st.plotly_chart(fig)
 
     st.divider()
     c1, c2, c3 = st.columns([2, 2, 3])

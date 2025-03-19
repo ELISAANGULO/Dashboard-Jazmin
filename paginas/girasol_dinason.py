@@ -29,9 +29,9 @@ def girasol_dinason():
 
     # Verificar si la columna 'SPM' existe en el DataFrame
     if 'SPM' in df_historico_gir.columns:
-        df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA']].copy()
+        df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
     else:
-        df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA']].copy()
+        df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
 
     df_gir = load_excel_file(excel_file_GIR_path, sheet_name='DIF DINASON GIR')
     df_cargadores_GIR = load_excel_file(excel_file_CARGADOR_GIR_path, sheet_name='Trabajo Previo')
@@ -89,14 +89,15 @@ def girasol_dinason():
 
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['LLENADO DE BOMBA'], mode='markers', name='LLENADO DE BOMBA', yaxis='y1', marker=dict(color='green')))
     fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SUMERGENCIA EFECTIVA'], mode='lines+markers', name='SUMERGENCIA EFECTIVA', yaxis='y2', marker=dict(color='blue')))
-
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['TEMPERATURA'], mode='markers', name='TEMPERATURA', yaxis='y1', marker=dict(color='red',symbol='square')))
+    fig.add_trace(go.Scatter(x=df_well['FECHA'], y=df_well['SPM'], mode='markers', name='SPM', yaxis='y1', marker=dict(color='Purple',symbol='triangle-up')))
 
     fig.update_layout(
         title=f'Datos del pozo {selected_well}',
         xaxis=dict(title='FECHA', tickformat='%b %Y'),
-        yaxis=dict(title=dict(text='LLENADO DE BOMBA')),
+        yaxis=dict(title='LLENADO DE BOMBA/ TEMPERATURA / SPM'),
         yaxis2=dict(
-            title=dict(text='SUMERGENCIA EFECTIVA'),
+            title='SUMERGENCIA EFECTIVA',
             tickfont=dict(color='black'),
             anchor='x',
             overlaying='y',
@@ -110,9 +111,6 @@ def girasol_dinason():
     )
 
     st.plotly_chart(fig)
-
-
-
 
     # Obtener los datos más recientes del pozo seleccionado
     latest_data = df_well.sort_values(by='FECHA', ascending=False).iloc[0]
