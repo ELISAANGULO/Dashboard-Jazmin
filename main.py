@@ -1,8 +1,15 @@
 import streamlit as st
-from datetime import datetime
-from paginas.jazmin_dinason import jazmin_dinason
-from layouts.Footer2 import footer_page
+
+# Configuración inicial de la página
+st.set_page_config(page_title="FIELD_DASHBOARD", page_icon='imagenes/plataforma-petrolera.png', layout="wide")
+
+
 import pyrebase
+from datetime import datetime
+from layouts.Footer2 import footer_page
+import re
+# Importar páginas
+from paginas.jazmin_dinason import jazmin_dinason
 from paginas.jazmin_pruebas import jazmin_pruebas
 from paginas.jazmin_subsuelo import jazmin_subsuelo
 from paginas.jazmin_vapor import jazmin_vapor
@@ -14,10 +21,7 @@ from paginas.urn_dinason import urn_dinason
 from paginas.urn_pruebas import urn_pruebas
 from paginas.urn_subsuelo import urn_subsuelo
 from paginas.urn_vapor import urn_vapor
-import re
 
-# Configuración inicial de la página
-st.set_page_config(page_title="DAHSBOARD ", page_icon='imagenes/plataforma-petrolera.png', layout="wide")
 
 # Estilo CSS para personalizar encabezado
 header_style = """
@@ -70,6 +74,7 @@ firebase = pyrebase.initialize_app(firebaseConfig)
 auth = firebase.auth()
 db = firebase.database()
 storage = firebase.storage()
+
 # Autenticación
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -88,12 +93,8 @@ def validate_password(password):
         return "La contraseña debe tener al menos 6 caracteres."
     return None
 
-if st.session_state['logged_in']:
-    st.sidebar.success(f'Bienvenid@ *{st.session_state["name"]}*')
-    if st.sidebar.button("🔒Cerrar sesión"):
-        st.session_state['logged_in'] = False
-        st.rerun()
-else:
+# Verificar autenticación antes de cargar cualquier contenido
+if not st.session_state['logged_in']:
     choice = st.selectbox('Login/Signup', ['Login', 'Sign up'])
 
     # Obtener datos del usuario
@@ -144,28 +145,31 @@ else:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error en el inicio de sesión: {e}")
+else:
+    st.sidebar.success(f'Bienvenid@ *{st.session_state["name"]}*')
+    if st.sidebar.button("🔒Cerrar sesión"):
+        st.session_state['logged_in'] = False
+        st.rerun()
 
-
-if st.session_state['logged_in']:
     st.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
     pages = {
         "JAZMIN": [
-            {"func": jazmin_dinason, "title": "🛢️Dinason", "icon": "🛢️"},
-            {"func": jazmin_subsuelo, "title": "🏔️Subsuelo", "icon": "🌋"},
-            {"func": jazmin_pruebas, "title": "🧪Pruebas", "icon": "🧪"},
-            {"func": jazmin_vapor, "title": "💨Vapor", "icon": "💨"}
+            {"func": jazmin_dinason, "title": "🛢️Dinason"},
+            {"func": jazmin_subsuelo, "title": "🏔️Subsuelo"},
+            {"func": jazmin_pruebas, "title": "🧪Pruebas"},
+            {"func": jazmin_vapor, "title": "💨Vapor"}
         ],
         "GIRASOL": [
-            {"func": girasol_dinason, "title": "🛢️Dinason", "icon": "⚙️"},
-            {"func": girasol_subsuelo, "title": "🏔️Subsuelo", "icon": "🏔️"},
-            {"func": girasol_pruebas, "title": "🧪Pruebas", "icon": "🧫"},
-            {"func": girasol_vapor, "title": "💨Vapor", "icon": "💨"}
+            {"func": girasol_dinason, "title": "🛢️Dinason"},
+            {"func": girasol_subsuelo, "title": "🏔️Subsuelo"},
+            {"func": girasol_pruebas, "title": "🧪Pruebas"},
+            {"func": girasol_vapor, "title": "💨Vapor"}
         ],
         "URN": [
-            {"func": urn_dinason, "title": "🛢️Dinason", "icon": "🛢️"},
-            {"func": urn_subsuelo, "title": "🏔️Subsuelo", "icon": "🌋"},
-            {"func": urn_pruebas, "title": "🧪Pruebas", "icon": "🧪"},
-            {"func": urn_vapor, "title": "💨Vapor", "icon": "💨"}
+            {"func": urn_dinason, "title": "🛢️Dinason"},
+            {"func": urn_subsuelo, "title": "🏔️Subsuelo"},
+            {"func": urn_pruebas, "title": "🧪Pruebas"},
+            {"func": urn_vapor, "title": "💨Vapor"}
         ],
     }
 
@@ -214,5 +218,3 @@ if st.session_state['logged_in']:
     elif selected_page == "URN" and selected_subpage == "🛢️Dinason":
         footer_page()
         urn_dinason()
-    else:
-        pass

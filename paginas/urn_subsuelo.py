@@ -1,57 +1,83 @@
-import streamlit as st 
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
+import plotly.graph_objects as go
+import pathlib
+from streamlit_extras.metric_cards import style_metric_cards
+import matplotlib.pyplot as plt
 
 def urn_subsuelo():
+    st.title("JAZMIN SUBSUELO")
 
-    st.title("URN DINASON")
+    @st.cache_data
+    def load_excel_file(file_path, sheet_name=None):
+        return pd.read_excel(file_path, sheet_name=sheet_name)
+
+    # LOAD CSS
+    def load_css(file_css):
+        if file_css.exists():
+            with open(file_css) as css:
+                st.markdown(f"<style>{css.read()}</style>", unsafe_allow_html=True)
+        else:
+            st.error("CSS file not found.")
+
+    css_path = pathlib.Path("style.css")
+    load_css(css_path)
 
     # Load Excel files
-    excel_file = pd.ExcelFile('data/DINASON URN.xlsx')
-    st.write("Sheets in DINASON URN.xlsx:", excel_file.sheet_names)
+    excel_file_JAZ_path = 'data/INTERVENCIONES JAZMIN.xlsx'
+    df_historico_jaz = load_excel_file(excel_file_JAZ_path, sheet_name='BD')
 
-    excel_file_CARGADOR_URN = pd.ExcelFile('data/Cargador Diferidas Underriver Norte.xlsx')
-    st.write("Sheets in Cargador Diferidas Underriver Norte.xlsx:", excel_file_CARGADOR_URN.sheet_names)
+    # Convertir FECHA a datetime y luego al formato DD/MM/YYYY
+    df_historico_jaz['FECHA'] = pd.to_datetime(df_historico_jaz['FECHA'], errors='coerce', dayfirst=True)
 
-    # Read data from Excel files
-    df_urn = pd.read_excel(excel_file, sheet_name='DIF DINASON URN')
-    df_cargadores_URN = pd.read_excel(excel_file_CARGADOR_URN, sheet_name='Trabajo Previo')
-    df_cargadores_URN.columns = df_cargadores_URN.iloc[0]
-    df_cargadores_URN = df_cargadores_URN[1:].reset_index(drop=True)
+    # Filtrar fechas inválidas
+    df_historico_jaz = df_historico_jaz.dropna(subset=['FECHA'])
 
-    # Display first 5 rows of df_urn
-    st.write("First 5 rows of df_urn:")
-    st.dataframe(df_urn.head(5))
+    # Filtrar registros donde CAMPO sea igual a 'JAZMIN'
+    df_historico_jaz = df_historico_jaz[df_historico_jaz['CAMPO'].str.upper() == 'UNDERRIVER']
 
-    # Process df_cargadores_URN
-    estado_pozos_urn = df_cargadores_URN[['NOMBRE  SARTA']].copy()
-    estado_pozos_urn.rename(columns={'NOMBRE  SARTA': 'SARTA'}, inplace=True)
-    st.write("First 3 rows of estado_pozos_urn:")
-    st.dataframe(estado_pozos_urn.head(3))
+    st.dataframe(df_historico_jaz)
 
-    # Sumergencia alta URN
-    df_sumergencia_ALTA_URN = df_urn[(df_urn['SUMERGENCIA EFECTIVA ACTUAL'] > 200) & 
-                                    (df_urn['LLENADO BOMBA\n'] < 50) & 
-                                    (df_urn['SPM'] != 'OFF')]
+    def get_filtered_data(well_planning, sarta):
+        df_filtered = df_historico_jaz
+        if well_planning:
+            df_filtered = df_filtered[df_filtered['WELL PLANNING'].isin(well_planning)]
+        if sarta:
+            df_filtered = df_filtered[df_filtered['SARTA'] == sarta]
+        return df_filtered
 
-    # Ordenar el DataFrame por 'SUMERGENCIA EFECTIVA ACTUAL' de mayor a menor
-    df_sumergencia_ALTA_URN = df_sumergencia_ALTA_URN.sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=False)
+    # Crear la aplicación Streamlit
+    selected_well_planning = st.multiselect('Selecciona un well planning', list(df_historico_jaz['WELL PLANNING'].unique()))
+    selected_pozo = st.selectbox('Selecciona un pozo', [''] + list(df_historico_jaz['SARTA'].unique()))
 
-    # Sumergencia baja URN
-    df_sumergencia_BAJA_URN = df_urn[(df_urn['SUMERGENCIA EFECTIVA ACTUAL'] < 30) & 
-                                    (df_urn['LLENADO BOMBA\n'] < 30) & 
-                                    (df_urn['SPM'] != 'OFF')]
+    df_filtered = get_filtered_data(selected_well_planning, selected_pozo)
 
-    # Ordenar el DataFrame por 'SUMERGENCIA EFECTIVA ACTUAL' de menor a mayor
-    df_sumergencia_BAJA_URN = df_sumergencia_BAJA_URN.sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=True)
+    if not df_filtered.empty:
+        # Contar el número de intervenciones por fecha y tipo de intervención
+        df_filtered['COUNT'] = df_filtered.groupby(['FECHA', 'INTERVENCION'])['INTERVENCION'].transform('count')
+        
+        fig = px.bar(df_filtered, x='FECHA', y='COUNT', color='INTERVENCION', title='Cantidad de intervenciones por fecha y tipo de intervención')
 
-    # Display data
-    st.subheader("POZOS DE URN CON SUMERGENCIA MAYOR A 200 Y LLENADO DE BOMBA MENOR A 50")
-    df_sumergencia_URN_ALTA_copy = df_sumergencia_ALTA_URN[['WELL','FECHA ACTUAL','SPM','LLENADO BOMBA\n', 'SUMERGENCIA EFECTIVA ACTUAL']].copy()
-    st.dataframe(df_sumergencia_URN_ALTA_copy)
+        fig.update_layout(
+            xaxis=dict(title='FECHA', tickformat='%d/%m/%Y'),
+            yaxis=dict(title='# de SERVICIOS'),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='black')
+        )
 
-    st.subheader("POZOS DE URN CON SUMERGENCIA MENOR A 30 FT Y LLENADO DE BOMBA MENOR A 30")
-    df_sumergencia_URN_BAJA_copy = df_sumergencia_BAJA_URN[['WELL','FECHA ACTUAL','SPM','LLENADO BOMBA\n', 'SUMERGENCIA EFECTIVA ACTUAL']].copy()
-    st.dataframe(df_sumergencia_URN_BAJA_copy)
+        st.plotly_chart(fig)
+        
+        # Crear tabla resumen por pozo y año
+        df_filtered['AÑO'] = df_filtered['FECHA'].dt.year
+        resumen_por_pozo = df_filtered.groupby(['SARTA', 'AÑO']).size().reset_index(name='SERVICIOS')
+        
+        st.subheader("Resumen por Pozo y Año")
+        st.dataframe(resumen_por_pozo, hide_index=True)
+        
+    else:
+        st.warning("No hay datos para los filtros seleccionados.")
+
+    st.divider()

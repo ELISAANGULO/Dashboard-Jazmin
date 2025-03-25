@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -6,13 +6,6 @@ import pathlib
 from streamlit_extras.metric_cards import style_metric_cards
 
 def girasol_dinason():
-
-    st.title("GIRASOL DINASON")
-
-    @st.cache_data
-    def load_excel_file(file_path, sheet_name=None):
-        return pd.read_excel(file_path, sheet_name=sheet_name)
-
     # LOAD CSS
     def load_css(file_css):
         with open(file_css) as css:
@@ -21,47 +14,47 @@ def girasol_dinason():
     css_path = pathlib.Path("style.css")
     load_css(css_path)
 
+    @st.cache_data
+    def load_excel_file(file_path, sheet_name=None):
+        return pd.read_excel(file_path, sheet_name=sheet_name)
+
+
+    @st.cache_data
+    def filter_data(df, estado_pozos_gir):
+        df_gir = df[~df['SARTA'].isin(estado_pozos_gir['SARTA'])]
+        df_sumergencia_ALTA_GIR = df_gir[(df_gir['SUMERGENCIA EFECTIVA ACTUAL'] > 200) & 
+                                        (df_gir['LLENADO BOMBA\n'] < 50) & 
+                                        (df_gir['SPM'] != 'OFF') & 
+                                        (df_gir['SPM'] != 'INACT')].sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=False)
+        df_sumergencia_BAJA_GIR = df_gir[(df_gir['SUMERGENCIA EFECTIVA ACTUAL'] < 30) & 
+                                        (df_gir['LLENADO BOMBA\n'] < 30) & 
+                                        (df_gir['SPM'] != 'OFF') & 
+                                        (df_gir['SPM'] != 'INACT')].sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=True)
+        return df_sumergencia_ALTA_GIR, df_sumergencia_BAJA_GIR
+
+
+    st.title("GIRASOL DINASON")
+
     # Load Excel files
     excel_file_GIR_path = 'data/DINASON GIRASOL.xlsx'
     excel_file_CARGADOR_GIR_path = 'data/Cargador Diferidas Girasol.xlsx'
 
     df_historico_gir = load_excel_file(excel_file_GIR_path, sheet_name='DINASON GIRASOL')
+    df_gir = load_excel_file(excel_file_GIR_path, sheet_name='DIF DINASON GIR')
+    df_cargadores_GIR = load_excel_file(excel_file_CARGADOR_GIR_path, sheet_name='Trabajo Previo')
+    df_cargadores_GIR.columns = df_cargadores_GIR.iloc[0]
+    df_cargadores_GIR = df_cargadores_GIR[1:].reset_index(drop=True)
+
+    estado_pozos_gir = df_cargadores_GIR[['NOMBRE  SARTA']].copy()
+    estado_pozos_gir.rename(columns={'NOMBRE  SARTA': 'SARTA'}, inplace=True)
+
+    df_sumergencia_ALTA_GIR, df_sumergencia_BAJA_GIR = filter_data(df_gir, estado_pozos_gir)
 
     # Verificar si la columna 'SPM' existe en el DataFrame
     if 'SPM' in df_historico_gir.columns:
         df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'SPM', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
     else:
         df_historico_gir = df_historico_gir[['SARTA', 'FECHA', 'LLENADO DE BOMBA', 'SUMERGENCIA EFECTIVA','TEMPERATURA']].copy()
-
-    df_gir = load_excel_file(excel_file_GIR_path, sheet_name='DIF DINASON GIR')
-    df_cargadores_GIR = load_excel_file(excel_file_CARGADOR_GIR_path, sheet_name='Trabajo Previo')
-    df_cargadores_GIR.columns = df_cargadores_GIR.iloc[0]
-    df_cargadores_GIR = df_cargadores_GIR[1:].reset_index(drop=True)
-
-    # Process df_cargadores_GIR
-    estado_pozos_gir = df_cargadores_GIR[['NOMBRE  SARTA']].copy()
-    estado_pozos_gir.rename(columns={'NOMBRE  SARTA': 'SARTA'}, inplace=True)
-
-    # Filter df_gir
-    df_gir = df_gir[~df_gir['SARTA'].isin(estado_pozos_gir['SARTA'])]
-
-    # Sumergencia alta GIR
-    df_sumergencia_ALTA_GIR = df_gir[(df_gir['SUMERGENCIA EFECTIVA ACTUAL'] > 200) & 
-                                    (df_gir['LLENADO BOMBA\n'] < 50) & 
-                                    (df_gir['SPM'] != 'OFF') & 
-                                    (df_gir['SPM'] != 'INACT')]
-
-    # Ordenar el DataFrame por 'SUMERGENCIA EFECTIVA ACTUAL' de mayor a menor
-    df_sumergencia_ALTA_GIR = df_sumergencia_ALTA_GIR.sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=False)
-
-    # Sumergencia baja GIR (adjusted conditions)
-    df_sumergencia_BAJA_GIR = df_gir[(df_gir['SUMERGENCIA EFECTIVA ACTUAL'] < 30) & 
-                                    (df_gir['LLENADO BOMBA\n'] < 30) & 
-                                    (df_gir['SPM'] != 'OFF') & 
-                                    (df_gir['SPM'] != 'INACT')]
-
-    # Ordenar el DataFrame por 'SUMERGENCIA EFECTIVA ACTUAL' de menor a mayor
-    df_sumergencia_BAJA_GIR = df_sumergencia_BAJA_GIR.sort_values(by='SUMERGENCIA EFECTIVA ACTUAL', ascending=True)
 
     # Convertir FECHA a datetime
     df_historico_gir['FECHA'] = pd.to_datetime(df_historico_gir['FECHA'])
@@ -74,16 +67,12 @@ def girasol_dinason():
     def get_well_data(well_name):
         return df_historico_gir[df_historico_gir['SARTA'] == well_name]
 
-    # Crear la aplicación Streamlit
-    #st.title('Dashboard de Pozos')
-
     selected_well = st.selectbox(
         'Selecciona un pozo',
         df_historico_gir['SARTA'].unique()
     )
 
     df_well = get_well_data(selected_well)
-
 
     fig = go.Figure()
 
@@ -129,10 +118,7 @@ def girasol_dinason():
 
     st.divider()
 
-
-
-    if st.button("REVISAR DATA GENERAL",key="data"):
-
+    if st.button("REVISAR DATA GENERAL", key="data"):
         st.subheader("POZOS DE GIRASOL CON SUMERGENCIA MAYOR A 200 Y LLENADO DE BOMBA MENOR A 50")
         df_sumergencia_GIR_copy = df_sumergencia_ALTA_GIR[['WELL', 'FECHA ACTUAL', 'SPM', 'LLENADO BOMBA\n', 'SUMERGENCIA EFECTIVA ACTUAL']].copy()
         st.dataframe(df_sumergencia_GIR_copy)
